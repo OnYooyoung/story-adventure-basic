@@ -4,6 +4,8 @@ using UnityEngine.InputSystem;
 
 public class Player : MonoBehaviour
 {
+    public GameManager gameManager;
+
     // Variables related to player character movement
     public InputAction MoveAction;
     Rigidbody2D rigidbody2d;
@@ -32,18 +34,20 @@ public class Player : MonoBehaviour
         move = MoveAction.ReadValue<Vector2>();
 
         // 플레이어가 움직이고 있다면 (0이 아니라면), 부동소수점문제 해결 위해 approximately 사용
-        if (!Mathf.Approximately(move.x, 0.0f) || !Mathf.Approximately(move.y, 0.0f))
+        if (!gameManager.isAction && (!Mathf.Approximately(move.x, 0.0f) || !Mathf.Approximately(move.y, 0.0f)))
         {
             moveDirection.Set(move.x, move.y); // 현재 방향을 기억
             moveDirection.Normalize(); // 길이 1로 정규화
         }
 
-        animator.SetFloat("Look X", moveDirection.x);
-        animator.SetFloat("Look Y", moveDirection.y);
-        animator.SetFloat("Speed", move.magnitude);
+        if (!gameManager.isAction)
+        {
+            animator.SetFloat("Look X", moveDirection.x);
+            animator.SetFloat("Look Y", moveDirection.y);
+            animator.SetFloat("Speed", move.magnitude);
+        }
 
-        // Scene 뷰에서만 빨간 선으로 레이저 사거리가 보입니다.
-        Debug.DrawRay(rigidbody2d.position + Vector2.up * 0.2f, moveDirection * 1.5f, Color.red);
+        Debug.DrawRay(rigidbody2d.position + Vector2.up * 0.2f, moveDirection * 1.5f, Color.green);
 
         if (InteractAction.WasPressedThisFrame())
         {
@@ -53,10 +57,7 @@ public class Player : MonoBehaviour
             // 2. 무언가 맞았다면?
             if (hit.collider != null)
             {
-                Debug.Log(hit.collider.gameObject.name + "을(를) 조사했습니다!");
-
-                // 여기에 상자 열기나 대화창 띄우기 코드를 넣으면 됩니다.
-                // 예: hit.collider.GetComponent<Chest>()?.Open();
+                gameManager.Action(hit.collider.GameObject());
             }
         }
     }
@@ -64,7 +65,10 @@ public class Player : MonoBehaviour
     // FixedUpdate has the same call rate as the physics system
     void FixedUpdate()
     {
-        Vector2 position = (Vector2)rigidbody2d.position + move * speed * Time.fixedDeltaTime;
-        rigidbody2d.MovePosition(position);
+        if (!gameManager.isAction)
+        {
+            Vector2 position = (Vector2)rigidbody2d.position + move * speed * Time.fixedDeltaTime;
+            rigidbody2d.MovePosition(position);
+        }
     }
 }
